@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Usuario</title>
+    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+</head>
+<style>
+    #capture {
+        width: 80%;
+    }
+</style>
+
+<body>
+    <div class="container p-4">
+        <div class="row">
+            <div class="col">
+                <div class="form-group">
+                    <label for="">Nombres</label>
+                    <input id="name" type="text" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="">Apellidos</label>
+                    <input id="last_name" type="text" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="">Cédula</label>
+                    <input id="dni" type="text" class="form-control">
+                </div>
+                <div class="form-group my-3 mx-auto text-center">
+                    <img style="width: 80%;" id="image">
+                    <video id="capture" autoplay style="display: none;"></video>
+                </div>
+                <div class="form-group text-center">
+                    <button id="btnCap" class="btn btn-sm btn-success" style="display: none;">Capturar</button>
+                    <button id="btnReset" class="btn btn-sm btn-warning">Reiniciar</button>
+                </div>
+                <div class="form-group mt-3 mx-auto text-center">
+                    <button id="update" class="btn btn-primary btn-block shadow">ACTUALIZAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <canvas id="canvas" class="d-none"></canvas>
+
+    <script>
+        const { ipcRenderer } = require('electron')
+
+        window.$ = require('jquery')
+        var id_user = '';
+        ipcRenderer.on('show-user', (event, data) => {
+            $('#name').val(data.name);
+            $('#last_name').val(data.last_name);
+            $('#dni').val(data.dni);
+            $('#image').attr('src', data.image);
+            id_user = data._id
+        });
+
+        ipcRenderer.send('show-user')
+
+        const video = document.getElementById('capture');
+        var resetImage = false;
+        var img = $('#image').attr('src')
+
+        async function startCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+            video.srcObject = stream;
+            video.pause();
+        }
+
+        startCamera();
+
+        $('#btnCap').on('click', () => {
+            $('#btnCap').hide();
+            $('#btnReset').show();
+            video.pause();
+            $('#capture').hide();
+
+            $('#image').show();
+            var canvas = document.getElementById('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+
+            $('#image').attr('src', canvas.toDataURL('image/png'))
+
+        })
+
+        $('#btnReset').on('click', () => {
+            $('#btnReset').hide();
+            $('#btnCap').show();
+            $('#image').hide();
+            $('#capture').show();
+            video.play();
+        })
+
+        $('#update').on('click', () => {
+            console.log(img);
+            ipcRenderer.send('update-user', {
+                name: $('#name').val(),
+                last_name: $('#last_name').val(),
+                dni: $('#dni').val(),
+                image: $('#image').attr('src'),
+                id: id_user
+            });
+        })
+
+    </script>
+</body>
+
+</html>

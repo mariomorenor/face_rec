@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio</title>
+    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+
+<body>
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col-6">
+                <video autoplay class="shadow rounded main-video" id="video"></video>
+            </div>
+            <div class="col-6">
+                <div class="d-flex flex-column justify-content-between" style="height: 100%;">
+                    <div>
+                        <div class="text-center">
+                            <h1 class="mb-0 text-danger" id="time">00:00:00</h1>
+                            <h4 id="date"></h4>
+                        </div>
+                        <div>
+                            <label for="">Nombres</label>
+                            <input class="form-control" type="text" readonly>
+                        </div>
+                        <div>
+                            <label for="">Apellidos</label>
+                            <input type="text" class="form-control" readonly>
+                        </div>
+                        <div>
+                            <label for="">Cédula</label>
+                            <input type="text" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div class="alert alert-success d-none" id="alert-success" role="alert">
+                        A simple success alert—check it out!
+                    </div>
+                    <div class="alert alert-danger d-none" id="alert-error" role="alert">
+                        A simple success alert—check it out!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/index.js"></script>
+    <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+</body>
+
+</html>

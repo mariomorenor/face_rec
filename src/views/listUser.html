@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado de Usuarios</title>
+    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="row">
+                <div class="col">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nombres</th>
+                                <th>Apellidos</th>
+                                <th>Cédula</th>
+                                <th>Foto</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="user in users">
+                                <td>{{user.name}}</td>
+                                <td>{{user.last_name}}</td>
+                                <td>{{user.dni}}</td>
+                                <td>
+                                    <a href="#" v-if="!user.showImg" @click="user.showImg = true">Ver Imagen</a>
+                                    <a href="#" v-if="user.showImg" @click="user.showImg = false">Cerrar</a>
+                                    <br>
+                                    <img v-if="user.showImg" style="width: 50%;" :src="user.image" alt="No hay Foto">
+                                </td>
+                                <td>
+                                    <button @click="editUser(user._id)"
+                                        class="btn btn-sm btn-primary mx-2">Editar</button>
+                                    <button @click="deleteUser(user._id)"
+                                        class="btn btn-sm btn-danger">Eliminar</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="../assets/js/vue.js"></script>
+    <script src="../assets/js/listUser.js"></script>
+    <script>
+
+        const { ipcRenderer } = require('electron');
+
+        const { createApp, ref } = Vue
+
+        createApp({
+            setup() {
+
+                const users = ref([])
+
+                ipcRenderer.send('get-users');
+                ipcRenderer.on('list-users', (event, u) => {
+                    users.value = u
+                })
+
+                function deleteUser(user_id) {
+                    ipcRenderer.send('delete-user', user_id);
+                }
+
+                function editUser(user_id) {
+                    ipcRenderer.send('edit-user', user_id)
+                }
+
+                return {
+                    users,
+                    deleteUser,
+                    editUser
+                }
+            }
+        }).mount('#app')
+
+    </script>
+</body>
+
+</html>
