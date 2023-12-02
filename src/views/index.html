@@ -158,6 +158,8 @@
           if (counter == 2) {
             console.table(counter, rostro);
             counter = 0;
+            ipcRenderer.send()
+
           }
         }, 1000);
       });
