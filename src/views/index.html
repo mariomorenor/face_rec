@@ -1,53 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inicio</title>
-    <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
-</head>
+    <link
+      rel="stylesheet"
+      href="../../node_modules/bootstrap/dist/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
 
-<body>
+  <body>
+    <div id="canvas"></div>
     <div class="container mt-3">
-        <div class="row">
-            <div class="col-6">
-                <video autoplay class="shadow rounded main-video" id="video"></video>
-            </div>
-            <div class="col-6">
-                <div class="d-flex flex-column justify-content-between" style="height: 100%;">
-                    <div>
-                        <div class="text-center">
-                            <h1 class="mb-0 text-danger" id="time">00:00:00</h1>
-                            <h4 id="date"></h4>
-                        </div>
-                        <div>
-                            <label for="">Nombres</label>
-                            <input class="form-control" type="text" readonly>
-                        </div>
-                        <div>
-                            <label for="">Apellidos</label>
-                            <input type="text" class="form-control" readonly>
-                        </div>
-                        <div>
-                            <label for="">Cédula</label>
-                            <input type="text" class="form-control" readonly>
-                        </div>
-                    </div>
-                    <div class="alert alert-success d-none" id="alert-success" role="alert">
-                        A simple success alert—check it out!
-                    </div>
-                    <div class="alert alert-danger d-none" id="alert-error" role="alert">
-                        A simple success alert—check it out!
-                    </div>
-                </div>
-            </div>
+      <div class="row">
+        <div class="col-6">
+          <video autoplay muted class="main-video" id="video"></video>
         </div>
+        <div class="col-6">
+          <div
+            class="d-flex flex-column justify-content-between"
+            style="height: 100%"
+          >
+            <div>
+              <div class="text-center">
+                <h1 class="mb-0 text-danger" id="time">00:00:00</h1>
+                <h4 id="date"></h4>
+              </div>
+              <div>
+                <label for="">Nombres</label>
+                <input class="form-control" type="text" readonly />
+              </div>
+              <div>
+                <label for="">Apellidos</label>
+                <input type="text" class="form-control" readonly />
+              </div>
+              <div>
+                <label for="">Cédula</label>
+                <input type="text" class="form-control" readonly />
+              </div>
+            </div>
+            <div
+              class="alert alert-success d-none"
+              id="alert-success"
+              role="alert"
+            >
+              A simple success alert—check it out!
+            </div>
+            <div
+              class="alert alert-danger d-none"
+              id="alert-error"
+              role="alert"
+            >
+              A simple success alert—check it out!
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <script src="../assets/js/index.js"></script>
     <script src="../../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
-</body>
+    <script>
+      window.$ = require("jquery");
+      const moment = require("moment");
+      const faceapi = require("face-api.js");
 
+      // Variables
+      const date = $("#date");
+      const time = $("#time");
+
+      const video_el = document.getElementById("video");
+
+      // Init Time Counter
+      function setDateTime() {
+        date.text(moment().format("Y-MM-DD"));
+        setInterval(() => {
+          time.text(moment().format("HH:mm:ss"));
+        }, 1000);
+      }
+
+      // VIDEO
+      function startCamera() {
+        const stream = navigator.mediaDevices
+          .getUserMedia({
+            video: true,
+          })
+          .then((stream) => {
+            video_el.srcObject = stream;
+          });
+      }
+
+      setDateTime();
+
+      //   FaceAPI
+      faceapi.env.monkeyPatch({
+        Canvas: HTMLCanvasElement,
+        Image: HTMLImageElement,
+        ImageData: ImageData,
+        Video: HTMLVideoElement,
+        createCanvasElement: () => document.createElement("canvas"),
+        createImageElement: () => document.createElement("img"),
+      });
+
+      Promise.all([
+        faceapi.nets.ssdMobilenetv1.loadFromUri("../models"),
+        faceapi.nets.faceLandmark68Net.loadFromUri("../models"),
+        faceapi.nets.faceLandmark68TinyNet.loadFromUri("../models"),
+        faceapi.nets.faceRecognitionNet.loadFromUri("../models"),
+        faceapi.nets.ssdMobilenetv1.loadFromUri("../models"),
+      ]).then(startCamera);
+
+      var counter = 0;
+      var rostro = "unknown";
+
+      $("#video").on("play", async () => {
+        const labeledFaceDescriptors = await getLabeledFaceDescriptions();
+        const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors);
+
+        const canvas = faceapi.createCanvasFromMedia(video_el);
+        const displaySize = {
+          width: video_el.videoWidth,
+          height: video_el.videoHeight,
+        };
+        faceapi.matchDimensions(canvas, displaySize);
+
+        setInterval(async () => {
+          const detections = await faceapi
+            .detectAllFaces(video_el)
+            .withFaceLandmarks()
+            .withFaceDescriptors();
+
+          const resizedDetections = faceapi.resizeResults(
+            detections,
+            displaySize
+          );
+
+          canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+
+          const results = resizedDetections.map((d) => {
+            return faceMatcher.findBestMatch(d.descriptor);
+          });
+
+          if (results.length > 0) {
+            if (results[0].label == "unknown") {
+              counter = 0;
+              rostro = "unknown";
+            } else if (results[0].label != "unknown") {
+              if (rostro == results[0].label) {
+                counter++;
+              } else {
+                rostro = results[0].label;
+              }
+            }
+          }
+
+          if (counter == 2) {
+            console.table(counter, rostro);
+            counter = 0;
+          }
+        }, 1000);
+      });
+
+      function getLabeledFaceDescriptions() {
+        const labels = ["Mario"];
+        return Promise.all(
+          labels.map(async (label) => {
+            const descriptions = [];
+            for (let i = 1; i <= 2; i++) {
+              const img = await faceapi.fetchImage(`../assets/img/mario.png`);
+              const detections = await faceapi
+                .detectSingleFace(img)
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+              descriptions.push(detections.descriptor);
+            }
+            return new faceapi.LabeledFaceDescriptors(label, descriptions);
+          })
+        );
+      }
+    </script>
+  </body>
 </html>

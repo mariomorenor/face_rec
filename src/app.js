@@ -11,6 +11,14 @@ function createMenu() {
     {
       label: "Archivo",
       submenu: [
+        {
+          label:"Developer",
+          accelerator: "Ctrl+I",
+          click:()=>{
+            
+            mainWin.webContents.toggleDevTools();
+          }
+        },
         { type: "separator" },
         {
           label: "Salir",
